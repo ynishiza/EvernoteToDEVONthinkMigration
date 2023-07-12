@@ -1,0 +1,24 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           Script
+version:        0.0.0
+build-type:     Simple
+
+executable script
+  main-is: script.hs
+  other-modules:
+      Paths_Script
+  hs-source-dirs:
+      ./
+  ghc-options: -rtsopts=all -fprof-auto -fprof-auto-top -fprof-auto-calls -fprof-auto-exported -fprof-auto-calls -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -Werror -threaded -rtsopts -with-rtsopts=-N -Werror
+  build-depends:
+      base >=4.14 && <5
+    , bytestring >=0.10 && <0.12
+    , containers ==0.6.*
+    , tagsoup
+    , text
+  default-language: Haskell2010
