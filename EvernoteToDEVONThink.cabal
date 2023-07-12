@@ -4,16 +4,50 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           Script
+name:           EvernoteToDEVONThink
 version:        0.0.0
 build-type:     Simple
 
 executable script
   main-is: script.hs
   other-modules:
-      Paths_Script
+      Paths_EvernoteToDEVONThink
   hs-source-dirs:
       ./
+  default-extensions:
+      Haskell2010
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DeriveDataTypeable
+      DerivingStrategies
+      ExplicitForAll
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      ImportQualifiedPost
+      InstanceSigs
+      LambdaCase
+      MultiParamTypeClasses
+      OverloadedStrings
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      StandaloneKindSignatures
+      StrictData
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeOperators
+      TypeFamilyDependencies
+      TypeSynonymInstances
   ghc-options: -rtsopts=all -fprof-auto -fprof-auto-top -fprof-auto-calls -fprof-auto-exported -fprof-auto-calls -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -Werror -threaded -rtsopts -with-rtsopts=-N -Werror
   build-depends:
       async >=2.2 && <3

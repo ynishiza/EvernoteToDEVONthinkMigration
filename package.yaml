@@ -1,4 +1,4 @@
-name:                Script
+name:                EvernoteToDEVONThink
 dependencies:
 - tagsoup
 - base >= 4.14 && < 5
@@ -42,6 +42,41 @@ ghc-options:
 - -Wredundant-constraints
 - -threaded 
 - -Werror           # Warning as error
+
+default-extensions:
+- Haskell2010
+- ConstraintKinds
+- DataKinds
+- DeriveAnyClass
+- DeriveFoldable
+- DeriveFunctor
+- DeriveGeneric
+- DeriveTraversable
+- DeriveDataTypeable
+- DerivingStrategies
+- ExplicitForAll
+- FlexibleContexts
+- FlexibleInstances
+- FunctionalDependencies
+- GADTs
+- GeneralizedNewtypeDeriving
+- ImportQualifiedPost
+- InstanceSigs
+- LambdaCase
+- MultiParamTypeClasses
+- OverloadedStrings
+- RankNTypes
+- RecordWildCards
+- ScopedTypeVariables
+- StandaloneDeriving
+- StandaloneKindSignatures
+- StrictData
+- TemplateHaskell
+- TupleSections
+- TypeApplications
+- TypeOperators
+- TypeFamilyDependencies
+- TypeSynonymInstances
 
 executables:
   script:
