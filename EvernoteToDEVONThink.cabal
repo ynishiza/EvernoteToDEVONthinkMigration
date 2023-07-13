@@ -63,6 +63,7 @@ executable script
     , fmt
     , ghc-prim >=0.6.0
     , monad-control ==1.*
+    , monad-logger >=0.3.37 && <0.4
     , mtl >=2.0 && <2.3
     , optparse-applicative >=0.17 && <0.20
     , stm >2.5 && <3
