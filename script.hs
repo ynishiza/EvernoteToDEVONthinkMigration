@@ -22,6 +22,7 @@ import GHC.Exts (IsString)
 import System.Environment
 import System.FilePath
 import Text.HTML.TagSoup
+import Text.StringLike
 
 main :: IO ()
 main = do
@@ -73,11 +74,27 @@ codeBlockColor = "rgb(232, 232, 232)"
 codeBlockStyle :: (IsString s, Semigroup s) => s
 codeBlockStyle = "background: " <> codeBlockColor <> ";font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-radius: 4px; border: 1px solid rgba(0, 0, 0, 0.15)"
 
+isTagOpenFor :: StringLike s => s -> Tag s -> Bool
+isTagOpenFor s (TagOpen t _) = t == s
+isTagOpenFor _ _ = False
+
+isTagCloseFor :: StringLike s => s -> Tag s -> Bool
+isTagCloseFor s (TagClose t )  = t == s
+isTagCloseFor _ _ = False
+
 horizontalLine :: [EvernoteTag]
 horizontalLine = [
   TagOpen "div" [("style", "text-align: center;")], 
   TagText "--------------------------------------------------------------------------------------------------------", 
   TagClose "div"]
+
+isTableCodeBlock :: [EvernoteTag] -> Bool
+isTableCodeBlock tags = inner
+  & filter (isTagOpenFor "tr")
+  & length
+  & (== 1)
+  where
+    (inner, _) = matchTagsInit "table" tags
 
 visitTags :: [EvernoteTag] -> [EvernoteTag]
 visitTags [] = []
@@ -87,13 +104,16 @@ visitTags (tag : rest)
     hasCodeBlockAttribute attr =
       let (codeBlock, rest') = trace "visitTags: codeBlock" $ mapCodeBlockAsHighlight rest
        in codeBlock ++ visitTags rest'
-  | TagOpen "hr" _ <- tag = visitTags rest
-  | TagClose "hr" <- tag = horizontalLine ++ visitTags rest
+  | isTagOpenFor "hr" tag = visitTags rest
+  | isTagCloseFor "hr" tag = horizontalLine ++ visitTags rest
   | TagText text <- tag,
     isNoteContentData text =
       trace "visitTags: text" $ TagText (renderTags $ visitTags $ parseTags text) : visitTags rest
   | otherwise =
       trace ("visitTags:" <> show tag) $ tag : visitTags rest
+
+matchTagsInit :: Text -> [EvernoteTag] -> ([EvernoteTag], [EvernoteTag])
+matchTagsInit tagName tags = matchTags tagName 0 ([], tags)
 
 matchTags :: Text -> Int -> ([EvernoteTag], [EvernoteTag]) -> ([EvernoteTag], [EvernoteTag])
 matchTags tagName matchCount (matched, t : rest)
@@ -109,10 +129,14 @@ matchTags tagName matchCount (matched, t : rest)
 matchTags tagName _ (matched, []) = error $ "Failed to find closing match: " <> T.unpack tagName <> "\n" <> show matched
 
 mapCodeBlockAsHighlight :: [EvernoteTag] -> ([EvernoteTag], [EvernoteTag])
-mapCodeBlockAsHighlight tags = ((openTag : mapContent content) ++ [closeTag], rest)
+mapCodeBlockAsHighlight tags = (createCodeBlockFromContent content, rest)
   where
-    (content, rest) = matchTags codeBlockTag 0 ([], tags)
+    -- (content, rest) = matchTags codeBlockTag 0 ([], tags)
+    (content, rest) = matchTagsInit codeBlockTag tags
 
+createCodeBlockFromContent :: [EvernoteTag] -> [EvernoteTag]
+createCodeBlockFromContent content = (openTag : mapContent content) ++ [closeTag]
+  where
     -- Note: map codeblock to <pre>
     --
     -- When the note is converted to rich text, we want to ensure that the entire code block is highlighted.
