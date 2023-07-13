@@ -5,6 +5,7 @@
     --package tagsoup
     --package bytestring --package text
     --package filepath
+    --package mtl
 -}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
@@ -34,7 +35,8 @@ main = do
   let fileName = takeBaseName inputPath
       outPath = takeDirectory inputPath </> fileName <> "_out" <.> "enex"
       tags = parseTags content
-      out = visitTags tags
+      -- out = visitTags tags
+      out = visitTags' tags process
   renderTags out
     -- & T.replace newlinePlaceholder "\n"
     & T.writeFile outPath
@@ -94,23 +96,51 @@ isTableCodeBlock tags = inner
   & length
   & (== 1)
   where
-    (inner, _) = matchTagsInit "table" tags
+    (inner, _) = matchTagsInit "table" (tail tags)
 
-visitTags :: [EvernoteTag] -> [EvernoteTag]
-visitTags [] = []
-visitTags (tag : rest)
+visitTags' :: [EvernoteTag] -> (EvernoteTag -> [EvernoteTag] -> ([EvernoteTag], [EvernoteTag])) -> [EvernoteTag]
+visitTags' [] _ = []
+visitTags' (tag : rest) f
+  | TagText text <- tag,
+  isNoteContentData text = TagText (renderTags $ visitTags' ( parseTags text) f) : visitTags' rest f
+  | otherwise = let (processed, rest') = f tag rest
+          in processed ++ visitTags' rest' f
+
+process :: EvernoteTag -> [EvernoteTag] -> ([EvernoteTag], [EvernoteTag])
+process tag rest
   | TagOpen name attr <- tag,
     codeBlockTag == name,
     hasCodeBlockAttribute attr =
       let (codeBlock, rest') = trace "visitTags: codeBlock" $ mapCodeBlockAsHighlight rest
-       in codeBlock ++ visitTags rest'
-  | isTagOpenFor "hr" tag = visitTags rest
-  | isTagCloseFor "hr" tag = horizontalLine ++ visitTags rest
-  | TagText text <- tag,
-    isNoteContentData text =
-      trace "visitTags: text" $ TagText (renderTags $ visitTags $ parseTags text) : visitTags rest
+       in (codeBlock, rest')
+  | isTagOpenFor "table" tag,
+    isTableCodeBlock (tag:rest) = 
+          let (inner, rest') = matchTagsInit "table" rest
+          in (createCodeBlockFromContent inner, rest')
+  | isTagOpenFor "hr" tag = ([], rest)
+  | isTagCloseFor "hr" tag = (horizontalLine, rest)
   | otherwise =
-      trace ("visitTags:" <> show tag) $ tag : visitTags rest
+      trace ("visitTags other:" <> show tag) ([tag], rest)
+
+-- visitTags :: [EvernoteTag] -> [EvernoteTag]
+-- visitTags [] = []
+-- visitTags tags@(tag : rest)
+--   | TagOpen name attr <- tag,
+--     codeBlockTag == name,
+--     hasCodeBlockAttribute attr =
+--       let (codeBlock, rest') = trace "visitTags: codeBlock" $ mapCodeBlockAsHighlight rest
+--        in codeBlock ++ visitTags rest'
+--   | isTagOpenFor "table" tag,
+--     isTableCodeBlock tags = 
+--           let (inner, rest') = matchTagsInit "table" rest
+--           in createCodeBlockFromContent inner ++ visitTags rest'
+--   | isTagOpenFor "hr" tag = visitTags rest
+--   | isTagCloseFor "hr" tag = horizontalLine ++ visitTags rest
+--   | TagText text <- tag,
+--     isNoteContentData text =
+--       trace "visitTags: text" $ TagText (renderTags $ visitTags $ parseTags text) : visitTags rest
+--   | otherwise =
+--       trace ("visitTags:" <> show tag) $ tag : visitTags rest
 
 matchTagsInit :: Text -> [EvernoteTag] -> ([EvernoteTag], [EvernoteTag])
 matchTagsInit tagName tags = matchTags tagName 0 ([], tags)
