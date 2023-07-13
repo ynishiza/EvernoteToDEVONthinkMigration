@@ -3,7 +3,8 @@
   stack script
     --resolver nightly-2022-11-05 --compiler ghc-9.2.5
     --package tagsoup
-    --package bytestring --package text
+    --package bytestring
+    --package text
     --package filepath
     --package mtl
     --package monad-logger
@@ -11,64 +12,91 @@
     --package text-show
     --package containers
     --package directory
+    --package css-text
+    --package aeson
+    --package aeson-pretty
+    --package lens
 -}
 {- FOURMOLU_DISABLE -}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# HLINT ignore "Use mapMaybe" #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {- FOURMOLU_ENABLE -}
 
-import Utils
+import Control.Lens hiding (Context, (<.>))
 import Control.Monad.Logger
 import Control.Monad.State
-import Data.Foldable
-import Data.Function ((&))
-import Data.Functor
+import Data.Aeson hiding ((.=))
+import Data.Aeson.Encode.Pretty
+import Data.List (find)
+import Data.Map (Map)
+import Data.Map qualified as Map
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Text (Text)
-import Data.Text qualified as T
 import Data.Text.IO qualified as T
+import Data.Text.Lazy qualified as TL
+import Data.Text.Lazy.Encoding qualified as TL
+import GHC.Generics (Generic)
 import System.Directory
 import System.Environment
 import System.FilePath
 import Text.HTML.TagSoup
 import TextShow
+import Utils
 
-type M m = (MonadLogger m, MonadState Context m, MonadIO m)
+type M m = (MonadFail m, MonadLogger m, MonadState Context m, MonadIO m)
 
 data Context = Context
-  { codeBlocks :: Int
-  , tableCodeBlocks :: Int
-  , styles :: Set Text
+  { currentNote :: Maybe NoteInfo
+  , notes :: Map Text NoteInfo
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (ToJSON)
+
+data NoteInfo = NoteInfo
+  { noteName :: Text
+  , noteCodeBlocks :: Int
+  , noteTableCodeBlocks :: Int
+  , noteStyles :: Set Text
+  }
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (ToJSON)
+
+$(makeLensesWith dataLensRules ''NoteInfo)
+$(makeLensesWith dataLensRules ''Context)
+
+emptyNote :: Text -> NoteInfo
+emptyNote name = NoteInfo name 0 0 Set.empty
 
 initialContext :: Context
-initialContext = Context 0 0 Set.empty
+initialContext = Context Nothing Map.empty
 
 main :: IO ()
 main = do
   (inputPath : _) <- getArgs
   content <- T.readFile inputPath
 
-  --
-  -- let c = T.replace "<div><div><br /></div></div>" "<div></div>" content
   let fileName = takeBaseName inputPath
-      outPath = takeDirectory inputPath </> fileName <> "_out" <.> "enex"
-      logPath = takeDirectory inputPath </> fileName <> "" <.> "log"
+      baseDir = takeDirectory inputPath
+      outPath = baseDir </> fileName <> "_out" <.> "enex"
+      logPath = baseDir </> fileName <> "" <.> "log"
+      infoPath = baseDir </> fileName <> "_info" <.> "json"
       tags = parseTags content
 
   removeFileIfNotExists logPath
-  (out, _) <-
+  (result, context) <-
     traverseTags tags processTag
-      & run logPath
-  renderTags out
-    -- & T.replace newlinePlaceholder "\n"
+      & runProcess logPath
+  renderTags result
     & T.writeFile outPath
+  toContextText context
+    & T.writeFile infoPath
 
 instance TextShow EvernoteTag where showb tag = showb (show tag)
 instance TextShow Context where showb tag = showb (show tag)
@@ -78,19 +106,25 @@ removeFileIfNotExists path = do
   exists <- doesFileExist path
   when exists $ removeFile path
 
--- instance TextShow  where showb tag = showb (show tag)
-
-run :: FilePath -> LoggingT (StateT Context IO) a -> IO (a, Context)
-run logPath m =
+runProcess :: FilePath -> LoggingT (StateT Context IO) a -> IO (a, Context)
+runProcess logPath m =
   runFileLoggingT logPath m'
     & flip runStateT initialContext
  where
   m' = do
     result <- m
     context <- get
-    logInfoN $ "context:" <> showt context
-    liftIO $ T.putStrLn $ "context:" <> showt context
+    let context' = toContextText context
+    logInfoN $ "context:" <> context'
+    liftIO $ T.putStrLn $ "context:" <> context'
     return result
+
+toContextText :: ToJSON a => a -> Text
+toContextText context =
+  toJSON context
+    & encodePretty
+    & TL.decodeUtf8
+    & TL.toStrict
 
 traverseTags :: M m => [EvernoteTag] -> (EvernoteTag -> [EvernoteTag] -> m ([EvernoteTag], [EvernoteTag])) -> m [EvernoteTag]
 traverseTags [] _ = return []
@@ -105,39 +139,45 @@ traverseTags (tag : rest) f
 
 processTag :: M m => EvernoteTag -> [EvernoteTag] -> m ([EvernoteTag], [EvernoteTag])
 processTag tag rest
-   -- case:
+  -- case:
   | TagOpen name attr <- tag
   , codeBlockTag == name
   , hasCodeBlockAttribute attr = do
       logInfoN "visitTags: codeBlock"
-      modify (\m@Context{codeBlocks} -> m{codeBlocks = codeBlocks + 1})
+      _currentNote . _Just . _noteCodeBlocks += 1
       return $ mapCodeBlockAsHighlight rest
-   -- case:
+  -- case:
   | isTagOpenFor "table" tag
   , isTableCodeBlock (tag : rest) = do
       logInfoN "visitTags: table"
-      modify (\m@Context{tableCodeBlocks} -> m{tableCodeBlocks = tableCodeBlocks + 1})
+      _currentNote . _Just . _noteTableCodeBlocks += 1
       let (inner, rest') = matchTagsInit "table" rest
       return (createCodeBlockFromContent inner, rest')
-   -- case:
+  -- case:
   | isTagOpenFor "hr" tag = return ([], rest)
   | isTagCloseFor "hr" tag = return (horizontalLine, rest)
-   -- case:
+  -- case:
   | TagOpen "note" _ <- tag
   , (TagOpen "title" _ : TagText title : _) <- rest = do
       let message = "Note:" <> title
+      let note = emptyNote title
+      _currentNote .= Just note
+      _notes . at title ?= note
       liftIO $ T.putStrLn message
       logInfoN message
       return ([tag], rest)
-   -- case:
-  | TagOpen _ attr <- tag = do
-      let elementStyles =
-            filter ((== "style") . fst) attr
-              <&> snd
-              & filter ("font" `T.isInfixOf`)
-              & Set.fromList
-      modify (\m@Context{styles} -> m{styles = Set.union styles elementStyles})
+  | TagClose "note" <- tag = do
+      Just note <- use _currentNote
+      _notes . at (noteName note) ?= note
+      _currentNote .= Nothing
       return ([tag], rest)
+  -- case:
+  | TagOpen _ attr <- tag
+  , Just (_, stylesText) <- find ((== "style") . fst) attr
+  , Just font <- getFontFamily stylesText = do
+      _currentNote . _Just . _noteStyles %= Set.union (Set.singleton font)
+      return ([tag], rest)
+  -- case:
   | otherwise = do
       logInfoN ("visitTags other:" <> showt tag)
       return ([tag], rest)
@@ -199,7 +239,6 @@ createCodeBlockFromContent content = (openTag : mapContent content) ++ [closeTag
   -- Note: treat as a single line if nested divs
   mapContent (TagClose "div" : TagClose "div" : TagClose "div" : xs) = TagText "\n" : mapContent xs
   mapContent (TagClose "div" : TagClose "div" : xs) = TagText "\n" : mapContent xs
-  -- mapContent (TagClose "div" : xs) = TagText newlinePlaceholder : mapContent xs
   mapContent (TagClose "div" : xs) = TagText "\n" : mapContent xs
   -- br is a close tag <br />
   mapContent (TagClose "br" : xs) = mapContent xs
@@ -207,17 +246,3 @@ createCodeBlockFromContent content = (openTag : mapContent content) ++ [closeTag
   mapContent (TagOpen _ _ : xs) = mapContent xs
   mapContent (TagClose _ : xs) = mapContent xs
   mapContent (t : xs) = t : mapContent xs
-
-testPrintTags :: [EvernoteTag] -> IO ()
-testPrintTags = traverse_ testPrintTag
-
-testPrintTag :: EvernoteTag -> IO ()
-testPrintTag (TagOpen s _) = T.putStrLn $ "<" <> s <> ">"
-testPrintTag (TagClose s) = T.putStrLn $ "</" <> s <> ">"
-testPrintTag (TagComment s) = T.putStrLn $ "comment:" <> s
-testPrintTag (TagWarning s) = T.putStrLn $ "warning:" <> s
-testPrintTag (TagPosition x y) = putStrLn $ show x <> "," <> show y
-testPrintTag (TagText s) =
-  if isNoteContentData s
-    then testPrintTags (parseTags s)
-    else T.putStrLn $ "text:" <> s

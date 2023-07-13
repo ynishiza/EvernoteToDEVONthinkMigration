@@ -1,8 +1,4 @@
-{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# HLINT ignore "Use mapMaybe" #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Utils (
   isNoteContentData,
@@ -19,15 +15,18 @@ module Utils (
   EvernoteTag,
   EvernoteAttribute,
   testPrintTags,
+  getFontFamily,
+  dataLensRules,
 ) where
 
+import Control.Lens
 import Data.Foldable
-import Data.Function ((&))
 import Data.List (isSubsequenceOf)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import GHC.Exts (IsString)
+import Text.CSS.Parse
 import Text.HTML.TagSoup
 import Text.StringLike
 
@@ -39,9 +38,9 @@ type EvernoteAttribute = Attribute Text
 --
 --   <![CDATA[<!DOCTYPE en-note SYSTEM ..><en-note> ... </en-note>]]>
 isNoteContentData :: Text -> Bool
-isNoteContentData t = "<!DOCTYPE en-note" `T.isPrefixOf` t'
+isNoteContentData text = "<!DOCTYPE en-note" `T.isPrefixOf` t'
  where
-  t' = T.strip t
+  t' = T.strip text
 
 codeBlockTag :: IsString s => s
 codeBlockTag = "div"
@@ -68,6 +67,15 @@ isTagOpenFor _ _ = False
 isTagCloseFor :: StringLike s => s -> Tag s -> Bool
 isTagCloseFor s (TagClose t) = t == s
 isTagCloseFor _ _ = False
+
+getFontFamily :: Text -> Maybe Text
+getFontFamily text = case parseAttrs text of
+  Left _ -> Nothing
+  Right styles -> case find (isFontStyle . fst) styles of
+    Nothing -> Nothing
+    Just (_, font) -> Just font
+ where
+  isFontStyle x = x == "font-family" || x == "font"
 
 horizontalLine :: [EvernoteTag]
 horizontalLine =
@@ -114,3 +122,11 @@ testPrintTag (TagText s) =
   if isNoteContentData s
     then testPrintTags (parseTags s)
     else T.putStrLn $ "text:" <> s
+
+lensNamer :: FieldNamer
+lensNamer = mappingNamer $ \s -> ['_' : s]
+
+dataLensRules :: LensRules
+dataLensRules =
+  lensRules
+    & set lensField lensNamer

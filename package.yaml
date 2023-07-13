@@ -1,13 +1,14 @@
 name:                EvernoteToDEVONThink
 dependencies:
 - tagsoup
+- aeson >= 2 && <3
+- aeson-pretty
 - base >= 4.14 && < 5
 - containers >= 0.6 && < 0.7
 - template-haskell >=2.18 && <3
 - stm > 2.5 && < 3
 - ghc-prim >= 0.6.0
 - deepseq >= 1.4 && < 1.5
-- fmt
 - mtl >= 2.0 && < 2.3
 - exceptions >= 0.10 && < 0.11
 - transformers >= 0.5 && < 0.6
@@ -24,6 +25,8 @@ dependencies:
 - optparse-applicative >= 0.17 && < 0.20
 - async >= 2.2 && < 3
 - attoparsec >= 0.14
+- css-text
+- lens > 5 && < 6
 
 ghc-options:
 - -rtsopts=all
@@ -42,6 +45,7 @@ ghc-options:
 - -Wpartial-fields
 - -Wredundant-constraints
 - -threaded 
+- -rtsopts
 - -Werror           # Warning as error
 
 default-extensions:
@@ -79,13 +83,9 @@ default-extensions:
 - TypeFamilyDependencies
 - TypeSynonymInstances
 
+
 executables:
   script:
     main:                script.hs
     source-dirs:         .
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    - -Werror           # Warning as error
 
