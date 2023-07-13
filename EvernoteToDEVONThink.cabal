@@ -11,6 +11,7 @@ build-type:     Simple
 executable script
   main-is: script.hs
   other-modules:
+      Utils
       Paths_EvernoteToDEVONThink
   hs-source-dirs:
       ./
