@@ -1,0 +1,17 @@
+{
+    "currentNote": null,
+    "notes": {
+        "Cheatsheet [.NET]: Visual Basic": {
+            "noteCodeBlocks": 0,
+            "noteFontFaces": [
+                "Andale Mono"
+            ],
+            "noteFonts": [
+                "\"Andale Mono\"",
+                "Arial"
+            ],
+            "noteName": "Cheatsheet [.NET]: Visual Basic",
+            "noteTableCodeBlocks": 7
+        }
+    }
+}

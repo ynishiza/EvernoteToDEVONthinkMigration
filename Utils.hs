@@ -17,6 +17,11 @@ module Utils (
   testPrintTags,
   getFontFamily,
   dataLensRules,
+  baseFontSize,
+  codeStyle,
+  codeFontFamily,
+  styleAttribute,
+  styleAttributes,
 ) where
 
 import Control.Lens
@@ -25,8 +30,11 @@ import Data.List (isSubsequenceOf)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
+import Data.Text.Lazy qualified as TL
+import Data.Text.Lazy.Builder qualified as TL
 import GHC.Exts (IsString)
 import Text.CSS.Parse
+import Text.CSS.Render
 import Text.HTML.TagSoup
 import Text.StringLike
 
@@ -34,11 +42,14 @@ type EvernoteTag = Tag Text
 
 type EvernoteAttribute = Attribute Text
 
--- Evernote note content is a CDATA of the form
---
---   <![CDATA[<!DOCTYPE en-note SYSTEM ..><en-note> ... </en-note>]]>
+{-
+
+    <note><title>Cheatsheet: Markdown</title><content><![CDATA[<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd"><en-note> ...
+
+    <note><title>Cheatsheet [.NET]: cheatsheet</title><content><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?><!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+-}
 isNoteContentData :: Text -> Bool
-isNoteContentData text = "<!DOCTYPE en-note" `T.isPrefixOf` t'
+isNoteContentData text = "<!DOCTYPE en-note" `T.isPrefixOf` t' || "<?xml version" `T.isPrefixOf` t'
  where
   t' = T.strip text
 
@@ -57,8 +68,42 @@ hasCodeBlockAttribute = any isCodeBlockAttribute
 codeBlockColor :: IsString s => s
 codeBlockColor = "rgb(232, 232, 232)"
 
-codeBlockStyle :: (IsString s, Semigroup s) => s
-codeBlockStyle = "background: " <> codeBlockColor <> ";font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-radius: 4px; border: 1px solid rgba(0, 0, 0, 0.15)"
+baseFontSize :: IsString s => s
+baseFontSize = "12px"
+
+styleAttribute :: (Text, Text) -> Text
+styleAttribute v =
+  renderAttr v
+    & TL.toLazyText
+    & TL.toStrict
+
+styleAttributes :: [(Text, Text)] -> Text
+styleAttributes v = T.intercalate ";" (styleAttribute <$> v) <> ";"
+
+-- Note: slightly smaller than the base size
+-- since monospace fonts appear larger.
+codeFontSize :: IsString s => s
+codeFontSize = "10px"
+
+codeFontFamily :: IsString s => s
+codeFontFamily = "Monaco, Menlo, Consolas, monospace"
+
+codeStyle :: Text
+codeStyle =
+  styleAttributes
+    [ ("font-family", codeFontFamily)
+    , ("font-size", codeFontSize)
+    , ("color", "rgb(51, 51, 51)")
+    ]
+
+codeBlockStyle :: Text
+codeBlockStyle =
+  codeStyle
+    <> styleAttributes
+      [ ("background", codeBlockColor)
+      , ("border-radius", "4px")
+      , ("border", "1px solid rgba(0, 0, 0, 0.15)")
+      ]
 
 isTagOpenFor :: StringLike s => s -> Tag s -> Bool
 isTagOpenFor s (TagOpen t _) = t == s

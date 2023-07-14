@@ -1,0 +1,22 @@
+{
+    "currentNote": null,
+    "notes": {
+        "Example typical note": {
+            "noteCodeBlocks": 1,
+            "noteFontFaces": [
+                "Andale Mono",
+                "Monaco"
+            ],
+            "noteFonts": [],
+            "noteName": "Example typical note",
+            "noteTableCodeBlocks": 1
+        },
+        "Example: Note beginning with ?xml tag": {
+            "noteCodeBlocks": 0,
+            "noteFontFaces": [],
+            "noteFonts": [],
+            "noteName": "Example: Note beginning with ?xml tag",
+            "noteTableCodeBlocks": 0
+        }
+    }
+}
