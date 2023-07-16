@@ -1,3 +1,6 @@
 cradle:
   stack:
-    component: "EvernoteToDEVONThink:exe:script"
+    - path: "."
+      component: EvernoteToDEVONThink:exe:script 
+    - path: "./test"
+      component: EvernoteToDEVONThink:test:test 

@@ -11,6 +11,7 @@ build-type:     Simple
 executable script
   main-is: script.hs
   other-modules:
+      Process
       Utils
       Paths_EvernoteToDEVONThink
   hs-source-dirs:
@@ -70,6 +71,84 @@ executable script
     , monad-logger >=0.3.37 && <0.4
     , mtl >=2.0 && <2.3
     , optparse-applicative >=0.17 && <0.20
+    , regex-tdfa
+    , stm >2.5 && <3
+    , tagsoup
+    , template-haskell >=2.18 && <3
+    , text >=1.2 && <3
+    , text-show >=3.0 && <4
+    , time >=1.8 && <2
+    , transformers ==0.5.*
+    , transformers-base >=0.4 && <1
+  default-language: Haskell2010
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Process
+      Utils
+      Paths_EvernoteToDEVONThink
+  hs-source-dirs:
+      test
+  default-extensions:
+      Haskell2010
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DeriveDataTypeable
+      DerivingStrategies
+      ExplicitForAll
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      ImportQualifiedPost
+      InstanceSigs
+      LambdaCase
+      MultiParamTypeClasses
+      OverloadedStrings
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      StandaloneKindSignatures
+      StrictData
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeOperators
+      TypeFamilyDependencies
+      TypeSynonymInstances
+  ghc-options: -rtsopts=all -fprof-auto -fprof-auto-top -fprof-auto-calls -fprof-auto-exported -fprof-auto-calls -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -Werror
+  build-depends:
+      aeson ==2.*
+    , aeson-pretty
+    , async >=2.2 && <3
+    , attoparsec >=0.14
+    , base >=4.14 && <5
+    , blaze-html >=0.9 && <1
+    , bytestring >=0.10 && <0.12
+    , containers ==0.6.*
+    , css-text
+    , deepseq ==1.4.*
+    , directory ==1.3.*
+    , exceptions ==0.10.*
+    , extra >=1.5 && <1.8
+    , filepath >=1.4.1 && <1.5
+    , ghc-prim >=0.6.0
+    , hspec >=0.1 && <=3
+    , lens >5 && <6
+    , monad-control ==1.*
+    , monad-logger >=0.3.37 && <0.4
+    , mtl >=2.0 && <2.3
+    , optparse-applicative >=0.17 && <0.20
+    , regex-tdfa
     , stm >2.5 && <3
     , tagsoup
     , template-haskell >=2.18 && <3

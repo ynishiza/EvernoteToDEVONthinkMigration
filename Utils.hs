@@ -1,10 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Eta reduce" #-}
 
 module Utils (
   isNoteContentData,
   codeBlockTag,
   isCodeBlockAttribute,
   hasCodeBlockAttribute,
+  codeFontRegex,
+  textFontRegex,
   codeBlockColor,
   codeBlockStyle,
   isTagOpenFor,
@@ -22,6 +27,13 @@ module Utils (
   codeFontFamily,
   styleAttribute,
   styleAttributes,
+  cleanseText,
+  isCodeFont,
+  isTextFont,
+  textFontFamily,
+  existingCodeFonts,
+  existingTextFonts,
+  normalizeTextFont,
 ) where
 
 import Control.Lens
@@ -36,6 +48,7 @@ import GHC.Exts (IsString)
 import Text.CSS.Parse
 import Text.CSS.Render
 import Text.HTML.TagSoup
+import Text.Regex.TDFA hiding (matchCount)
 import Text.StringLike
 
 type EvernoteTag = Tag Text
@@ -53,6 +66,52 @@ isNoteContentData text = "<!DOCTYPE en-note" `T.isPrefixOf` t' || "<?xml version
  where
   t' = T.strip text
 
+isCodeFont :: Text -> Bool
+isCodeFont s = s =~ codeFontRegex
+
+isTextFont :: Text -> Bool
+isTextFont s = s =~ textFontRegex
+
+existingCodeFonts :: [Text]
+existingCodeFonts =
+  [ "Andale Mono"
+  , "Monaco"
+  , "monospace"
+  ]
+
+codeFontRegex :: Text
+codeFontRegex = T.intercalate "|" (f <> (T.toLower <$> f))
+  where f = (\x -> "(" <> x <> ")") <$> existingCodeFonts
+
+existingTextFonts :: [Text]
+existingTextFonts =
+  -- IMPORTANT: longer names should be first in order to make sure they get replaced first
+  [ "Helvetica Neue"
+  , "Helvetica"
+  , "helvetica"
+  , "Arial Black"
+  , "Arial"
+  , "arial"
+  , "courier new"
+  , "courier"
+  , "UICTFontTextStyleBody"
+  , "Times"
+  , "Times New Roman"
+  , "sans-serif"
+  ]
+
+textFontRegex :: Text
+textFontRegex = T.intercalate "|" (f <> (T.toLower <$> f))
+  where f = (\x -> "(" <> x <> ")") <$> existingTextFonts
+
+normalizeTextFont :: Text -> Text
+normalizeTextFont text = replaceTextWithRegex textFontRegex textFontFamily text
+
+replaceTextWithRegex :: Text -> Text -> Text -> Text
+replaceTextWithRegex regex replacement text = if T.null y then x <> z else x <> replacement <> z
+ where
+  (x, y, z) = text =~ regex
+
 codeBlockTag :: IsString s => s
 codeBlockTag = "div"
 
@@ -69,7 +128,7 @@ codeBlockColor :: IsString s => s
 codeBlockColor = "rgb(232, 232, 232)"
 
 baseFontSize :: IsString s => s
-baseFontSize = "12px"
+baseFontSize = "14px"
 
 styleAttribute :: (Text, Text) -> Text
 styleAttribute v =
@@ -83,10 +142,13 @@ styleAttributes v = T.intercalate ";" (styleAttribute <$> v) <> ";"
 -- Note: slightly smaller than the base size
 -- since monospace fonts appear larger.
 codeFontSize :: IsString s => s
-codeFontSize = "10px"
+codeFontSize = "12px"
 
 codeFontFamily :: IsString s => s
 codeFontFamily = "Monaco, Menlo, Consolas, monospace"
+
+textFontFamily :: IsString s => s
+textFontFamily = "Helvetica Neue"
 
 codeStyle :: Text
 codeStyle =
@@ -113,6 +175,19 @@ isTagCloseFor :: StringLike s => s -> Tag s -> Bool
 isTagCloseFor s (TagClose t) = t == s
 isTagCloseFor _ _ = False
 
+cleanseText :: Text -> Text
+cleanseText text = foldr (uncurry T.replace) text toReplace
+ where
+  toReplace =
+    [ -- Double quotes
+      ("“", "\"")
+    , ("”", "\"")
+     -- Single quotes
+      ,  ("‘", "'")
+    , ("’", "'")
+    , ("—", "--")
+    ]
+
 getFontFamily :: Text -> Maybe Text
 getFontFamily text = case parseAttrs text of
   Left _ -> Nothing
@@ -125,7 +200,7 @@ getFontFamily text = case parseAttrs text of
 horizontalLine :: [EvernoteTag]
 horizontalLine =
   [ TagOpen "div" [("style", "text-align: center;")]
-  , TagText "--------------------------------------------------------------------------------------------------------"
+  , TagText "=============================================================="
   , TagClose "div"
   ]
 

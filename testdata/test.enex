@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE en-export SYSTEM "http://xml.evernote.com/pub/evernote-export3.dtd">
+
+<en-export export-date="20230712T004658Z" application="Evernote Legacy" version="Evernote Mac 7.14.1 (458325)">
+  <note><title>Example typical note</title>
+    <content>
+      <![CDATA[<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd"><en-note>
+
+Example: Code block
+<div style="box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.15);-en-codeblock:true;"><div>— Data.Aeson</div><div>— Data.ByteString.Lazy</div><div>decode :: FromJSON a =&gt; ByteString -&gt; Maybe a                             </div><div>decode' :: FromJSON a =&gt; ByteString -&gt; Maybe a                            — strict convert i.e. ByteString -&gt; a immediately</div><div>eitherDecode :: FromJSON a =&gt; ByteString -&gt; Either String a</div><div>eitherDecode' :: FromJSON a =&gt; ByteString -&gt; Either String a</div><div><br /></div><div>— Data.ByteString (strict)</div><div>decodeStrict :: FromJSON a =&gt; ByteString -&gt; Maybe a                       </div><div>decodeStrict' :: FromJSON a =&gt; ByteString -&gt; Maybe a                      — strict convert i.e. ByteString -&gt; a immediately</div><div>eitherDecodeStrict :: FromJSON a =&gt; ByteString -&gt; Either String a</div><div>eitherDecodeStrict' :: FromJSON a =&gt; ByteString -&gt; Either String a</div><div><br /></div><div><span style="font-size: 12px; color: rgb(51, 51, 51); font-family: Monaco;">decodeFileStrict :: FromJSON a =&gt; FilePath -&gt; IO (Maybe a)</span></div><div>decodeFileStrict' :: FromJSON a =&gt; FilePath -&gt; IO (Maybe a)</div><div>eitherDecodeFileStrict :: FromJSON a =&gt; FilePath -&gt; IO (Either String a)</div><div>eitherDecodeFileStrict' :: FromJSON a =&gt; FilePath -&gt; IO (Either String a)</div><div><br /></div><div>encode :: ToJSON a =&gt; a -&gt; ByteString</div><div>encodeFile :: ToJSON a =&gt; FilePath -&gt; a -&gt; IO ()</div><div><br /></div></div><div><br /></div>
+
+<hr />
+
+Example: Table code block
+<table width="404px" style="border-collapse: collapse; min-width: 100%;"><colgroup><col style="width: 404px;" /></colgroup><tbody><tr><td style="border: 1px solid rgb(204, 204, 204); width: 404px; padding: 8px;">abc</td></tr></tbody></table>
+
+<hr />
+
+Example: Consecutive code blocks (both div wrapped)
+<div><table width="404px" style="border-collapse: collapse; min-width: 100%;"><colgroup><col style="width: 404px;" /></colgroup><tbody><tr><td style="border: 1px solid rgb(204, 204, 204); width: 404px; padding: 8px;">abc</td></tr></tbody></table></div>
+<div><table width="404px" style="border-collapse: collapse; min-width: 100%;"><colgroup><col style="width: 404px;" /></colgroup><tbody><tr><td style="border: 1px solid rgb(204, 204, 204); width: 404px; padding: 8px;">abc</td></tr></tbody></table></div>
+
+Example: Consecutive code blocks (only one div wrapped)
+<table width="404px" style="border-collapse: collapse; min-width: 100%;"><colgroup><col style="width: 404px;" /></colgroup><tbody><tr><td style="border: 1px solid rgb(204, 204, 204); width: 404px; padding: 8px;">abc</td></tr></tbody></table>
+<div><table width="404px" style="border-collapse: collapse; min-width: 100%;"><colgroup><col style="width: 404px;" /></colgroup><tbody><tr><td style="border: 1px solid rgb(204, 204, 204); width: 404px; padding: 8px;">abc</td></tr></tbody></table></div>
+<hr />
+
+Font tag
+<font face="Monaco" size="5">abc</font>
+<font><font face="Andale Mono" size="5">abc</font></font>
+<font style="font-family: Andale Mono;" size="5">abc</font>
+
+<hr />
+Code text
+<div style="font-family: Andale Mono;font-size: 60px;">abc</div>
+<div style="font-family: Monaco;font-size: 60px;">abc</div>
+<div style="font-family: monospace;font-size: 60px;">abc</div>
+
+<hr />
+Normal text
+<div style="font-family: Arial; ">abc</div>
+<div style="font-family: Helvetica; ">abc</div>
+<div style="font-family: Helvetica Neue; ">abc</div>
+
+
+<hr />
+Cleanse text
+<pre>
+double quote: “a” 
+single quotes: ‘a’ 
+</pre>
+    </en-note>]]>
+
+
+    </content>
+    <created>20230629T205234Z</created>
+    <updated>20230701T021641Z</updated>
+    <note-attributes>
+      <author>Yui Nishizawa</author>
+      <source>desktop.mac</source>
+      <reminder-order>0</reminder-order>
+    </note-attributes>
+  </note>
+
+  <note><title>Example: Note beginning with ?xml tag</title>
+  <content>
+      <![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+        <en-note style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;">
+        <div>To do:</div>
+        </en-note>
+        ]]>
+    </content><created>20130611T002428Z</created><updated>20140603T195311Z</updated><note-attributes><latitude>34.73442741666667</latitude><longitude>135.31856032</longitude><altitude>0</altitude><author>Yui Nishizawa</author><reminder-order>0</reminder-order></note-attributes>
+  </note>
+</en-export>

@@ -7,9 +7,16 @@
                 "Andale Mono",
                 "Monaco"
             ],
-            "noteFonts": [],
+            "noteFonts": [
+                "Andale Mono",
+                "Arial",
+                "Helvetica",
+                "Helvetica Neue",
+                "Monaco",
+                "monospace"
+            ],
             "noteName": "Example typical note",
-            "noteTableCodeBlocks": 1
+            "noteTableCodeBlocks": 5
         },
         "Example: Note beginning with ?xml tag": {
             "noteCodeBlocks": 0,

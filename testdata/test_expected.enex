@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE en-export SYSTEM "http://xml.evernote.com/pub/evernote-export3.dtd">
+<en-export export-date="20230712T004658Z" application="Evernote Legacy" version="Evernote Mac 7.14.1 (458325)">
+  <note>
+<title>
+Example typical note</title>
+    <content>
+      <!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+<en-note>
+<div style="font-size:14px;font-family:Helvetica Neue;">
+Example: Code block<pre style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);background:rgb(232, 232, 232);border-radius:4px;border:1px solid rgba(0, 0, 0, 0.15);">
+-- Data.Aeson
+-- Data.ByteString.Lazy
+decode :: FromJSON a =&amp;gt; ByteString -&amp;gt; Maybe a                             
+decode&amp;#39; :: FromJSON a =&amp;gt; ByteString -&amp;gt; Maybe a                            -- strict convert i.e. ByteString -&amp;gt; a immediately
+eitherDecode :: FromJSON a =&amp;gt; ByteString -&amp;gt; Either String a
+eitherDecode&amp;#39; :: FromJSON a =&amp;gt; ByteString -&amp;gt; Either String a
+
+-- Data.ByteString (strict)
+decodeStrict :: FromJSON a =&amp;gt; ByteString -&amp;gt; Maybe a                       
+decodeStrict&amp;#39; :: FromJSON a =&amp;gt; ByteString -&amp;gt; Maybe a                      -- strict convert i.e. ByteString -&amp;gt; a immediately
+eitherDecodeStrict :: FromJSON a =&amp;gt; ByteString -&amp;gt; Either String a
+eitherDecodeStrict&amp;#39; :: FromJSON a =&amp;gt; ByteString -&amp;gt; Either String a
+
+decodeFileStrict :: FromJSON a =&amp;gt; FilePath -&amp;gt; IO (Maybe a)
+decodeFileStrict&amp;#39; :: FromJSON a =&amp;gt; FilePath -&amp;gt; IO (Maybe a)
+eitherDecodeFileStrict :: FromJSON a =&amp;gt; FilePath -&amp;gt; IO (Either String a)
+eitherDecodeFileStrict&amp;#39; :: FromJSON a =&amp;gt; FilePath -&amp;gt; IO (Either String a)
+
+encode :: ToJSON a =&amp;gt; a -&amp;gt; ByteString
+encodeFile :: ToJSON a =&amp;gt; FilePath -&amp;gt; a -&amp;gt; IO ()
+
+</pre>
+<div>
+<br />
+</div>
+<div style="text-align: center;">
+==============================================================</div>
+Example: Table code block<pre style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);background:rgb(232, 232, 232);border-radius:4px;border:1px solid rgba(0, 0, 0, 0.15);">
+abc</pre>
+<div style="text-align: center;">
+==============================================================</div>
+Example: Consecutive code blocks (both div wrapped)<div>
+<pre style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);background:rgb(232, 232, 232);border-radius:4px;border:1px solid rgba(0, 0, 0, 0.15);">
+abc</pre>
+</div>
+<br />
+<div>
+<pre style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);background:rgb(232, 232, 232);border-radius:4px;border:1px solid rgba(0, 0, 0, 0.15);">
+abc</pre>
+</div>
+Example: Consecutive code blocks (only one div wrapped)<pre style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);background:rgb(232, 232, 232);border-radius:4px;border:1px solid rgba(0, 0, 0, 0.15);">
+abc</pre>
+<br />
+<div>
+<pre style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);background:rgb(232, 232, 232);border-radius:4px;border:1px solid rgba(0, 0, 0, 0.15);">
+abc</pre>
+</div>
+<div style="text-align: center;">
+==============================================================</div>
+Font tag<span style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);">
+abc</span>
+<span>
+<span style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);">
+abc</span>
+</span>
+<span style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);">
+abc</span>
+<div style="text-align: center;">
+==============================================================</div>
+Code text<div style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);">
+abc</div>
+<div style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);">
+abc</div>
+<div style="font-family:Monaco, Menlo, Consolas, monospace;font-size:12px;color:rgb(51, 51, 51);">
+abc</div>
+<div style="text-align: center;">
+==============================================================</div>
+Normal text<div style="font-family: Helvetica Neue; ">
+abc</div>
+<div style="font-family: Helvetica Neue; ">
+abc</div>
+<div style="font-family: Helvetica Neue; ">
+abc</div>
+<div style="text-align: center;">
+==============================================================</div>
+Cleanse text<pre>
+double quote: "a" single quotes: &amp;#39;a&amp;#39; </pre>
+    </div>
+</en-note>
+    </content>
+    <created>
+20230629T205234Z</created>
+    <updated>
+20230701T021641Z</updated>
+    <note-attributes>
+      <author>
+Yui Nishizawa</author>
+      <source>
+desktop.mac</source>
+      <reminder-order>
+0</reminder-order>
+    </note-attributes>
+  </note>
+  <note>
+<title>
+Example: Note beginning with ?xml tag</title>
+  <content>
+      <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+        <!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+        <en-note style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;">
+<div style="font-size:14px;font-family:Helvetica Neue;">
+        <div>
+To do:</div>
+        </div>
+</en-note>
+            </content>
+<created>
+20130611T002428Z</created>
+<updated>
+20140603T195311Z</updated>
+<note-attributes>
+<latitude>
+34.73442741666667</latitude>
+<longitude>
+135.31856032</longitude>
+<altitude>
+0</altitude>
+<author>
+Yui Nishizawa</author>
+<reminder-order>
+0</reminder-order>
+</note-attributes>
+  </note>
+</en-export>
