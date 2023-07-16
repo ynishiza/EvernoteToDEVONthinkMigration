@@ -1,0 +1,25 @@
+name: Continuous Integration
+
+on: [push]
+
+jobs:
+  # Uses: https://github.com/haskell/actions/tree/main/setup
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: set
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: '9.0.1' # Resolves to the latest point release of GHC 8.8
+          cabal-version: '3.8' # Exact version of Cabal
+
+      - name: Clean
+        run: stack clean
+
+      - name: Test
+        run: stack test
+
+      - name: Lint
+        run: stack exec -- hlint -v src test

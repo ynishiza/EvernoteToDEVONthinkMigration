@@ -5,9 +5,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Process (
-  processTag,
-  traverseTags,
-  M,
   Context (..),
   NoteInfo (..),
   runProcess,
@@ -17,13 +14,17 @@ module Process (
   _noteTableCodeBlocks,
   _notes,
   toContextText,
+  module Utils,
 ) where
 
+import CodeContent
+import Content
 import Control.Lens hiding (Context, (<.>))
 import Control.Monad.Logger
 import Control.Monad.State
 import Data.Aeson hiding ((.=))
 import Data.Aeson.Encode.Pretty
+import Data.ByteString.Char8 qualified as B
 import Data.List (partition)
 import Data.Map (Map)
 import Data.Map qualified as Map
@@ -31,16 +32,16 @@ import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as T
-import Data.Text.IO qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Text.Lazy.Encoding qualified as TL
 import GHC.Generics (Generic)
+import System.IO
 import Text.HTML.TagSoup
 import Text.Regex.TDFA
 import TextShow
 import Utils
 
-type M m = (MonadFail m, MonadLogger m, MonadState Context m, MonadIO m)
+type Process m = (MonadFail m, MonadLogger m, MonadState Context m, MonadIO m)
 
 data Context = Context
   { currentNote :: Maybe NoteInfo
@@ -74,18 +75,35 @@ initialContext = Context Nothing Map.empty
 instance TextShow EvernoteTag where showb tag = showb (show tag)
 instance TextShow Context where showb tag = showb (show tag)
 
-runProcess :: FilePath -> LoggingT (StateT Context IO) a -> IO (a, Context)
-runProcess logPath m =
-  runFileLoggingT logPath m'
+runProcess :: FilePath -> Text -> IO ([EvernoteTag], Context)
+runProcess logPath content =
+  cleanseText content
+    & parseTags
+    & flip traverseTags processTag
+    & runProcess_ logPath
+
+runProcess_ :: FilePath -> LoggingT (StateT Context IO) a -> IO (a, Context)
+runProcess_ logPath proc = withFile logPath ReadWriteMode $ \handle ->
+  execLogger proc' handle
     & flip runStateT initialContext
  where
-  m' = do
-    result <- m
+  proc' = do
+    result <- proc
     context <- get
     let context' = toContextText context
     logInfoN $ "context:" <> context'
-    liftIO $ T.putStrLn $ "context:" <> context'
     return result
+
+  execLogger p handle =
+    runLoggingT
+      p
+      ( \loc src level msg -> do
+          let str' =
+                defaultLogStr loc src level msg
+                  & fromLogStr
+          when (level >= LevelInfo) $ B.putStr str'
+          B.hPutStr handle str'
+      )
 
 toContextText :: ToJSON a => a -> Text
 toContextText context =
@@ -95,7 +113,7 @@ toContextText context =
     & TL.toStrict
 
 -- | Test
-traverseTags :: M m => [EvernoteTag] -> (EvernoteTag -> [EvernoteTag] -> m ([EvernoteTag], [EvernoteTag])) -> m [EvernoteTag]
+traverseTags :: Process m => [EvernoteTag] -> (EvernoteTag -> [EvernoteTag] -> m ([EvernoteTag], [EvernoteTag])) -> m [EvernoteTag]
 traverseTags [] _ = return []
 traverseTags (tag : rest) f
   | TagText text <- tag
@@ -137,18 +155,16 @@ traverseTags (tag : rest) f
         <![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?><!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
 
 -}
-processTag :: M m => EvernoteTag -> [EvernoteTag] -> m ([EvernoteTag], [EvernoteTag])
+processTag :: Process m => EvernoteTag -> [EvernoteTag] -> m ([EvernoteTag], [EvernoteTag])
 processTag tag nextTags
   -- case: <note>
   -- Record beginning of new note
   | TagOpen "note" _ <- tag
   , (TagOpen "title" _ : TagText title : _) <- nextTags = do
-      let message = "processTag: note - " <> title
+      logInfoN $ "processTag: note - " <> title
       let note = emptyNote title
       _currentNote .= Just note
       _notes . at title ?= note
-      liftIO $ T.putStrLn message
-      logInfoN message
       return unchanged
   | TagClose "note" <- tag = do
       Just note <- use _currentNote
@@ -164,7 +180,7 @@ processTag tag nextTags
   --      <en-note style=...>           NO. Style doesn't get applied.
   --      <en-note><div style=...>      OK
   | TagOpen "en-note" enAttr <- tag = do
-      logInfoN "processTag: en-note"
+      $(logDebug) "processTag: en-note"
       return ([TagOpen "en-note" enAttr, TagOpen "div" [("style", styleAttributes [("font-size", baseFontSize), ("font-family", textFontFamily)])]], nextTags)
   | TagClose "en-note" <- tag =
       return ([TagClose "div", TagClose "en-note"], nextTags)
@@ -172,10 +188,10 @@ processTag tag nextTags
   -- Code block is a div of the form
   --
   --    <div style="... en-codeblock:true;">
-  | TagOpen name attr <- tag
-  , codeBlockTag == name
+  | TagOpen tagName attr <- tag
+  , codeBlockTag == tagName
   , hasCodeBlockAttribute attr = do
-      logInfoN "processTag: codeBlock"
+      $(logDebug) "processTag: codeBlock"
       _currentNote . _Just . _noteCodeBlocks += 1
       return $ mapCodeBlockAsHighlight nextTags
 
@@ -183,14 +199,14 @@ processTag tag nextTags
   -- Legacy code block is a table with 1 row and 1 column
   | isTagOpenFor "table" tag
   , isTableCodeBlock (tag : nextTags) = do
-      logInfoN "processTag: table code"
+      $(logDebug) "processTag: table code"
       _currentNote . _Just . _noteTableCodeBlocks += 1
       let (inner, rest') = matchTagsInit "table" nextTags
       return (createCodeBlockFromContent inner, rest')
 
   -- case: horizontal line
   | isTagOpenFor "hr" tag = do
-      logInfoN "processTag: hr"
+      $(logDebug) "processTag: hr"
       return ([], nextTags)
   | isTagCloseFor "hr" tag = return (horizontalLine, nextTags)
   -- case: <font face="Arial">
@@ -207,38 +223,41 @@ processTag tag nextTags
   | TagClose "font" <- tag = return ([TagClose "span"], nextTags)
   -- case: other tags with style
   -- Unify styles
-  | TagOpen name attr <- tag
+  | TagOpen tagName attr <- tag
   , Just (stylesText, attrRest) <- findAttr "style" attr =
-      convertTextStyle name stylesText attrRest
+      convertTextStyle tagName stylesText attrRest
   | TagText text <- tag = return ([TagText (T.replace "\n" "" text)], nextTags)
   -- case: rest
   | otherwise = do
-      logInfoN ("processTag: other" <> showt tag)
+      $(logDebug) ("processTag: other" <> showt tag)
       return unchanged
  where
-  codeStyleAttr = ("style", codeStyle)
   unchanged = ([tag], nextTags)
+  codeStyleAttr = ("style", codeStyle)
   findAttr attrName attrs = case partition (isEqual attrName . fst) attrs of
     ([(_, content)], attrRest) -> Just (content, attrRest)
     _ -> Nothing
+
+  -- case:
   convertFontTag fontFace = do
-    logInfoN ("processTag: font face=" <> fontFace)
+    $(logDebug) ("processTag: font face=" <> fontFace)
     _currentNote . _Just . _noteFontFaces %= Set.union (Set.singleton fontFace)
     if isCodeFont fontFace
       then return ([TagOpen "span" [codeStyleAttr]], nextTags)
       else return ([TagOpen "span" [("style", styleAttribute ("font-family", normalizeTextFont fontFace))]], nextTags)
-  convertTextStyle name stylesText attrRest
+
+  -- case:
+  convertTextStyle tagName stylesText attrRest
     | Just font <- getFontFamily stylesText = do
-        -- logDebugN $ font <> showt (font =~ codeFontRegex :: Bool) <> showt (isCodeFont font)
         _currentNote . _Just . _noteFonts %= Set.union (Set.singleton font)
         case () of
           ()
             | isCodeFont font -> do
                 writeLog "code font"
-                return ([TagOpen name (codeStyleAttr : attrRest)], nextTags)
+                return ([TagOpen tagName (codeStyleAttr : attrRest)], nextTags)
             | isTextFont font -> do
                 writeLog "text font"
-                return ([TagOpen name (("style", normalizeTextFont stylesText) : attrRest)], nextTags)
+                return ([TagOpen tagName (("style", normalizeTextFont stylesText) : attrRest)], nextTags)
             | otherwise -> do
                 writeLog $ "other font" <> (stylesText <> font <> showt (stylesText =~ codeFontRegex :: Bool))
                 return defaultRes
@@ -246,8 +265,8 @@ processTag tag nextTags
         writeLog "no font"
         return defaultRes
    where
-    defaultRes = ([TagOpen name (("style", stylesText) : attrRest)], nextTags)
-    writeLog message = logInfoN ("processTag: style element " <> showt tag <> "  " <> message)
+    defaultRes = ([TagOpen tagName (("style", stylesText) : attrRest)], nextTags)
+    writeLog message = $(logDebug) ("processTag: style element " <> showt tag <> "  " <> message)
 
 mapCodeBlockAsHighlight :: [EvernoteTag] -> ([EvernoteTag], [EvernoteTag])
 mapCodeBlockAsHighlight tags = (createCodeBlockFromContent content, rest)
