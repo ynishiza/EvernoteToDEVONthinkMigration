@@ -1,3 +1,3 @@
 yt_cleanouts() {
-	find ./testdata ./realNotes -name "*_out.enex" -delete
+	find ./src ./test -name "*_out.enex" -delete
 }

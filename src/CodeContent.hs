@@ -31,6 +31,7 @@ hasCodeBlockAttribute = any isCodeBlockAttribute
 
 codeBlockColor :: IsString s => s
 codeBlockColor = "rgb(232, 232, 232)"
+
 codeStyle :: Text
 codeStyle =
   styleAttributes
@@ -48,10 +49,8 @@ codeBlockStyle =
       , ("border", "1px solid rgba(0, 0, 0, 0.15)")
       ]
 
--- Note: slightly smaller than the base size
--- since monospace fonts appear larger.
 codeFontSize :: IsString s => s
-codeFontSize = "12px"
+codeFontSize = "14px"
 
 codeFontFamily :: IsString s => s
 codeFontFamily = "Monaco, Menlo, Consolas, monospace"
@@ -81,4 +80,4 @@ isTableCodeBlock tags =
     & length
     & (== 1)
  where
-  (inner, _) = matchTagsInit "table" (tail tags)
+  (inner, _) = matchTags "table" (tail tags)

@@ -184,6 +184,7 @@ processTag tag nextTags
       return ([TagOpen "en-note" enAttr, TagOpen "div" [("style", styleAttributes [("font-size", baseFontSize), ("font-family", textFontFamily)])]], nextTags)
   | TagClose "en-note" <- tag =
       return ([TagClose "div", TagClose "en-note"], nextTags)
+  --
   -- case: code block
   -- Code block is a div of the form
   --
@@ -201,14 +202,15 @@ processTag tag nextTags
   , isTableCodeBlock (tag : nextTags) = do
       $(logDebug) "processTag: table code"
       _currentNote . _Just . _noteTableCodeBlocks += 1
-      let (inner, rest') = matchTagsInit "table" nextTags
+      let (inner, rest') = matchTags "table" nextTags
       return (createCodeBlockFromContent inner, rest')
-
+  --
   -- case: horizontal line
   | isTagOpenFor "hr" tag = do
       $(logDebug) "processTag: hr"
       return ([], nextTags)
   | isTagCloseFor "hr" tag = return (horizontalLine, nextTags)
+  --
   -- case: <font face="Arial">
   --
   -- Change <font> tags to <span>s with style attributes since <font> is deprecated.
@@ -227,6 +229,7 @@ processTag tag nextTags
   , Just (stylesText, attrRest) <- findAttr "style" attr =
       convertTextStyle tagName stylesText attrRest
   | TagText text <- tag = return ([TagText (T.replace "\n" "" text)], nextTags)
+  --
   -- case: rest
   | otherwise = do
       $(logDebug) ("processTag: other" <> showt tag)
@@ -271,10 +274,11 @@ processTag tag nextTags
 mapCodeBlockAsHighlight :: [EvernoteTag] -> ([EvernoteTag], [EvernoteTag])
 mapCodeBlockAsHighlight tags = (createCodeBlockFromContent content, rest)
  where
-  (content, rest) = matchTagsInit codeBlockTag tags
+  (content, rest) = matchTags codeBlockTag tags
 
 createCodeBlockFromContent :: [EvernoteTag] -> [EvernoteTag]
-createCodeBlockFromContent content = (openTag : mapContent content) ++ [closeTag]
+createCodeBlockFromContent content =
+  (openTag : addPaddingBottom (addPaddingTop $ mapContent content)) ++ [closeTag]
  where
   -- Note: map Evernote codeblock to <pre>
   --
@@ -291,6 +295,7 @@ createCodeBlockFromContent content = (openTag : mapContent content) ++ [closeTag
   newTag = "pre"
   openTag = TagOpen newTag [("style", codeBlockStyle)]
   closeTag = TagClose newTag
+  newline = TagText "\n"
 
   mapContent [] = []
   -- Note: each line in an Evernote codeblock is represented by a div
@@ -308,7 +313,7 @@ createCodeBlockFromContent content = (openTag : mapContent content) ++ [closeTag
   -- Note: treat as a single line if nested divs
   mapContent (TagClose "div" : TagClose "div" : TagClose "div" : xs) = TagText "\n" : mapContent xs
   mapContent (TagClose "div" : TagClose "div" : xs) = TagText "\n" : mapContent xs
-  mapContent (TagClose "div" : xs) = TagText "\n" : mapContent xs
+  mapContent (TagClose "div" : xs) = newline : mapContent xs
   -- br is a close tag <br />
   mapContent (TagClose "br" : xs) = mapContent xs
   -- case: new line
@@ -323,6 +328,22 @@ createCodeBlockFromContent content = (openTag : mapContent content) ++ [closeTag
   mapContent (TagOpen _ _ : xs) = mapContent xs
   mapContent (TagClose _ : xs) = mapContent xs
   mapContent (t : xs) = t : mapContent xs
+
+  -- Note: add padding
+  addPaddingTop :: [EvernoteTag] -> [EvernoteTag]
+  addPaddingTop tags = case innerText tags of
+    text
+      | T.isPrefixOf "\n\n" text -> tags
+      -- IMPORTANT: Need a space before "\n"
+      -- Otherwise, it gets collapsed i.e. no new line
+      | T.isPrefixOf "\n" text -> TagText " \n" : tags
+      | otherwise -> TagText " \n" : tags
+  addPaddingBottom :: [EvernoteTag] -> [EvernoteTag]
+  addPaddingBottom tags = case innerText tags of
+    text
+      | T.isSuffixOf "\n\n" text -> tags
+      | T.isSuffixOf "\n" text -> tags ++ [newline]
+      | otherwise -> tags ++ [newline, newline]
 
 -- Note: Add space between consecutive <pre> tags
 -- Otherwise, they get combined merged when converted to Rich text

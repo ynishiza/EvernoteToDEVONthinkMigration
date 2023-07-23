@@ -3,7 +3,7 @@
 module Utils (
   isTagOpenFor,
   isTagCloseFor,
-  matchTagsInit,
+  matchTags,
   EvernoteTag,
   EvernoteAttribute,
   getFontFamily,
@@ -24,7 +24,7 @@ import Data.Text.Lazy.Builder qualified as TL
 import Text.CSS.Parse
 import Text.CSS.Render
 import Text.HTML.TagSoup
-import Text.Regex.TDFA hiding (matchCount)
+import Text.Regex.TDFA hiding (matchCount, before, after)
 import Text.StringLike
 
 type EvernoteTag = Tag Text
@@ -32,25 +32,25 @@ type EvernoteTag = Tag Text
 type EvernoteAttribute = Attribute Text
 
 replaceTextWithRegex :: Text -> Text -> Text -> Text
-replaceTextWithRegex regex replacement text = if T.null y then x <> z else x <> replacement <> z
+replaceTextWithRegex regex replacement text = if T.null matched then before <> after else before <> replacement <> after
  where
-  (x, y, z) = text =~ regex
+  (before, matched, after) = text =~ regex
 
 styleAttribute :: (Text, Text) -> Text
-styleAttribute v =
-  renderAttr v
+styleAttribute attr =
+  renderAttr attr
     & TL.toLazyText
     & TL.toStrict
 
 styleAttributes :: [(Text, Text)] -> Text
-styleAttributes v = T.intercalate ";" (styleAttribute <$> v) <> ";"
+styleAttributes attrs = T.intercalate ";" (styleAttribute <$> attrs) <> ";"
 
 isTagOpenFor :: StringLike s => s -> Tag s -> Bool
-isTagOpenFor s (TagOpen t _) = t == s
+isTagOpenFor name (TagOpen t _) = t == name
 isTagOpenFor _ _ = False
 
 isTagCloseFor :: StringLike s => s -> Tag s -> Bool
-isTagCloseFor s (TagClose t) = t == s
+isTagCloseFor name (TagClose t) = t == name
 isTagCloseFor _ _ = False
 
 getFontFamily :: Text -> Maybe Text
@@ -62,21 +62,21 @@ getFontFamily text = case parseAttrs text of
  where
   isFontStyle x = x == "font-family" || x == "font"
 
-matchTagsInit :: Text -> [EvernoteTag] -> ([EvernoteTag], [EvernoteTag])
-matchTagsInit tagName tags = matchTags tagName 0 ([], tags)
+matchTags :: Text -> [EvernoteTag] -> ([EvernoteTag], [EvernoteTag])
+matchTags name tags = _matchTags name 0 ([], tags)
 
-matchTags :: Text -> Int -> ([EvernoteTag], [EvernoteTag]) -> ([EvernoteTag], [EvernoteTag])
-matchTags tagName matchCount (matched, t : rest)
+_matchTags :: Text -> Int -> ([EvernoteTag], [EvernoteTag]) -> ([EvernoteTag], [EvernoteTag])
+_matchTags name matchCount (matched, t : rest)
   | TagClose s <- t
-  , s == tagName =
+  , s == name =
       if matchCount == 0
         then (matched, rest)
-        else matchTags tagName (matchCount - 1) (matched', rest)
-  | TagOpen s _ <- t, s == tagName = matchTags tagName (matchCount + 1) (matched', rest)
-  | otherwise = matchTags tagName matchCount (matched', rest)
+        else _matchTags name (matchCount - 1) (matched', rest)
+  | TagOpen s _ <- t, s == name = _matchTags name (matchCount + 1) (matched', rest)
+  | otherwise = _matchTags name matchCount (matched', rest)
  where
   matched' = matched ++ [t]
-matchTags tagName _ (matched, []) = error $ "Failed to find closing match: " <> T.unpack tagName <> "\n" <> show matched
+_matchTags name _ (matched, []) = error $ "Failed to find closing match: " <> T.unpack name <> "\n" <> show matched
 
 lensNamer :: FieldNamer
 lensNamer = mappingNamer $ \s -> ['_' : s]
