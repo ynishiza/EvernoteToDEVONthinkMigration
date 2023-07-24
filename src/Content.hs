@@ -86,6 +86,8 @@ cleanseText text = foldr (uncurry T.replace) text toReplace
     , ("’", "'")
     , --
       ("—", "--")
+    , --
+      ("…", "...")
     ]
 
 testPrintTags :: [EvernoteTag] -> IO ()

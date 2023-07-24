@@ -22,13 +22,16 @@
 -}
 {- FOURMOLU_DISABLE -}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {- FOURMOLU_ENABLE -}
 
 import Control.Lens hiding (Context, (<.>))
 import Control.Monad.State
 import Data.Set qualified as Set
+import Data.Map qualified as Map
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
+import TextShow
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Time.LocalTime
@@ -57,22 +60,24 @@ main = do
       logPath = baseDir </> fileName <> "" <.> "log"
       infoPath = baseDir </> fileName <> "_info" <.> "json"
 
-  (result, context) <- runProcess logPath content
+  (result, context@Context {..}) <- runProcess logPath content
   removeFileIfNotExists logPath
   let allNoteFonts =
-        ( context
-            & toListOf (_notes . traverse . _noteFonts)
+        ( notes
+            & toListOf (traverse . _noteFonts)
             & foldr Set.union Set.empty
         )
-          `Set.union` ( context
-                          & toListOf (_notes . traverse . _noteFontFaces)
+          `Set.union` ( notes
+                          & toListOf ( traverse . _noteFontFaces)
                           & foldr Set.union Set.empty
                       )
   renderTags result
     & T.writeFile outPath
   toContextText context
     & T.writeFile infoPath
-  T.putStrLn $ "fonts:" <> T.intercalate "," (Set.toList allNoteFonts)
+  let summary =  "fonts:" <> T.intercalate "," (Set.toList allNoteFonts) <> "\n"
+                  <> "count:" <> showt (Map.size notes)
+  T.putStrLn summary
 
 removeFileIfNotExists :: FilePath -> IO ()
 removeFileIfNotExists path = do

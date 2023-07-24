@@ -161,8 +161,9 @@ processTag tag nextTags
   -- Record beginning of new note
   | TagOpen "note" _ <- tag
   , (TagOpen "title" _ : TagText title : _) <- nextTags = do
-      logInfoN $ "processTag: note - " <> title
+      noteSize <- gets (Map.size . notes)
       let note = emptyNote title
+      logInfoN $ "processTag: note #" <> showt noteSize <> " - " <> title
       _currentNote .= Just note
       _notes . at title ?= note
       return unchanged
