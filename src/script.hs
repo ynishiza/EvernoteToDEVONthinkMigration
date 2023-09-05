@@ -60,8 +60,8 @@ main = do
       logPath = baseDir </> fileName <> "" <.> "log"
       infoPath = baseDir </> fileName <> "_info" <.> "json"
 
-  (result, context@Context {..}) <- runProcess logPath content
   removeFileIfNotExists logPath
+  (result, context@Context {..}) <- runProcess logPath content
   let allNoteFonts =
         ( notes
             & toListOf (traverse . _noteFonts)
@@ -77,6 +77,7 @@ main = do
     & T.writeFile infoPath
   let summary =  "fonts:" <> T.intercalate "," (Set.toList allNoteFonts) <> "\n"
                   <> "count:" <> showt (Map.size notes)
+  putStrLn logPath
   T.putStrLn summary
 
 removeFileIfNotExists :: FilePath -> IO ()

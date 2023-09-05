@@ -59,6 +59,43 @@ single quotes: ‘a’
 merged dash: —
 dots : … 
 </pre>
+
+
+<hr />
+List 
+
+<ol>
+   <li><div><font face="Arial">one</font></div></li>
+   <li>
+      <div><span style="font-family: Arial;">two</span></div>
+   </li>
+   <li>
+      <div><span style="font-family: Arial;">three</span></div>
+   </li>
+   <li>
+      <div><span style="font-family: Arial;">four</span></div>
+      <div><span style="font-family: Arial;">four a</span></div>
+   </li>
+   <li>
+      <div><span style="font-family: Arial;">five</span></div>
+   </li>
+</ol>
+
+<ul>
+   <li>
+      <div><span style="font-family: Arial;">a</span></div>
+   </li>
+   <li>
+      <div><span style="font-family: Arial;">b</span></div>
+   </li>
+   <li>
+      <div><span style="font-family: Arial;">c</span></div>
+      <div><span style="font-family: Arial;">cc</span></div>
+   </li>
+   <li>
+      <div><span style="font-family: Arial;">d</span></div>
+   </li>
+</ul>
     </en-note>]]>
 
 

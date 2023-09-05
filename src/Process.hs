@@ -185,6 +185,7 @@ processTag tag nextTags
       return ([TagOpen "en-note" enAttr, TagOpen "div" [("style", styleAttributes [("font-size", baseFontSize), ("font-family", textFontFamily)])]], nextTags)
   | TagClose "en-note" <- tag =
       return ([TagClose "div", TagClose "en-note"], nextTags)
+
   --
   -- case: code block
   -- Code block is a div of the form
@@ -242,7 +243,6 @@ processTag tag nextTags
     ([(_, content)], attrRest) -> Just (content, attrRest)
     _ -> Nothing
 
-  -- case:
   convertFontTag fontFace = do
     $(logDebug) ("processTag: font face=" <> fontFace)
     _currentNote . _Just . _noteFontFaces %= Set.union (Set.singleton fontFace)

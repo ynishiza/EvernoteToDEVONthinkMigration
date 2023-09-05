@@ -17,17 +17,28 @@ main = hspec $ describe "Test" $ do
   it "runProcess" $ do
     let dataPath = dataDir </> "test.enex"
         expectedPath = dataDir </> "test_expected.enex"
+        expectedUnescapedPath = dataDir </> "test_expected_unescaped.enex"
         outPath = dataDir </> "test_out.enex"
+        outUnescapedPath = dataDir </> "test_out_unescaped.enex"
+
     content <- T.readFile dataPath
     (result, context) <-
       runProcess "test.log" content
         <&> first renderTags
 
+    -- Note: test with 2 format
+    --  a) raw format
+    --  b) unescaped format
+    --
+    -- The content is the same but the unescaped format is more human-friendly for debugging the test
     T.writeFile outPath result
-    expected <- T.readFile expectedPath
+    T.writeFile outUnescapedPath $ unescape result
+    expectedResult <- T.strip <$> T.readFile expectedPath
+    expectedUnescaped <- T.strip <$> T.readFile expectedUnescapedPath
 
-    result `shouldBe` expected
-    unescape result `shouldBe` unescape expected
+    T.length (T.strip $ unescape result) `shouldBe` T.length expectedUnescaped
+    T.strip (unescape result) `shouldBe` expectedUnescaped
+    T.strip result `shouldBe` expectedResult
     context
       `shouldBe` Context
         { currentNote = Nothing
@@ -54,7 +65,7 @@ main = hspec $ describe "Test" $ do
                           , "monospace"
                           , "sans-serif"
                           ]
-                    , noteFontFaces = Set.fromList ["Andale Mono", "Monaco"]
+                    , noteFontFaces = Set.fromList ["Andale Mono", "Arial", "Monaco"]
                     }
                 )
               ,
